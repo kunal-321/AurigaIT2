@@ -6,11 +6,15 @@ import { SpotOverview } from './components/SpotOverview';
 import { CarLookup } from './components/CarLookup';
 import { TransactionLog } from './components/TransactionLog';
 import { PricingSettings } from './components/PricingSettings';
+import { Reports } from './components/Reports';
 import { ToastProvider, useToast } from './components/Toast';
 import { LiveClock } from './components/LiveClock';
 import { AnimatedCounter } from './components/AnimatedCounter';
+import { ClockEndpoint } from './components/ClockEndpoint';
+import { ValetTransfer } from './components/ValetTransfer';
+import { clearStorage, getStorageInfo } from './utils/storage';
 
-type Tab = 'operations' | 'overview' | 'log' | 'settings';
+type Tab = 'operations' | 'overview' | 'log' | 'settings' | 'reports';
 
 function AppContent() {
   const garage = useParkingGarage();
@@ -21,6 +25,7 @@ function AppContent() {
     { id: 'operations', label: 'Operations', icon: '🅿️', desc: 'Check In / Out' },
     { id: 'overview', label: 'Garage Map', icon: '🗺️', desc: 'Spot Overview' },
     { id: 'log', label: 'Transactions', icon: '📋', desc: 'History & Revenue' },
+    { id: 'reports', label: 'Reports', icon: '📊', desc: 'Analytics & Export' },
     { id: 'settings', label: 'Rates', icon: '💰', desc: 'Pricing Config' },
   ];
 
@@ -100,6 +105,13 @@ function AppContent() {
             </div>
             <div className="space-y-6">
               <CheckOut onCheckOut={garage.checkOut} parkedPlates={parkedPlates} />
+              {/* Level 3 — T6: Valet Hand-off */}
+              <ValetTransfer
+                parkedCars={garage.parkedCars}
+                onTransfer={garage.transferSession}
+              />
+              {/* Level 2 — T2: POST /clock endpoint */}
+              <ClockEndpoint onClock={garage.autoCloseLongStay} />
               {/* Quick availability */}
               <QuickAvailability summary={summary} />
             </div>
@@ -119,6 +131,15 @@ function AppContent() {
           </div>
         )}
 
+        {activeTab === 'reports' && (
+          <div className="max-w-5xl mx-auto animate-fade-up">
+            <Reports 
+              transactions={garage.transactions}
+              parkedCars={garage.parkedCars}
+            />
+          </div>
+        )}
+
         {activeTab === 'settings' && (
           <div className="max-w-lg mx-auto animate-fade-up">
             <PricingSettings pricing={garage.pricing} onUpdate={garage.setPricing} />
@@ -134,6 +155,11 @@ function AppContent() {
               <span className="font-display font-bold text-gray-700">ParkDesk</span>
               <span className="text-gray-300">•</span>
               <span>Multi-Level Parking Management System</span>
+              <span className="text-gray-300">•</span>
+              <span className="flex items-center gap-1">
+                <span className="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
+                <span>Data auto-saved</span>
+              </span>
             </div>
             <div className="flex items-center gap-3">
               <span className="px-2 py-1 bg-gray-100 rounded-md font-mono text-[10px]">
@@ -145,6 +171,17 @@ function AppContent() {
               <span className="px-2 py-1 bg-gray-100 rounded-md font-mono text-[10px]">
                 ₹{garage.pricing.dailyCap} max
               </span>
+              <button
+                onClick={() => {
+                  if (window.confirm('Clear all saved data? This will reset spots, parked vehicles, and transactions.')) {
+                    clearStorage();
+                    window.location.reload();
+                  }
+                }}
+                className="px-3 py-1 bg-red-50 hover:bg-red-100 text-red-600 rounded-md font-semibold transition-colors"
+              >
+                Clear Data
+              </button>
             </div>
           </div>
         </div>
