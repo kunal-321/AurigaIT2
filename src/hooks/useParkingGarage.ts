@@ -105,7 +105,7 @@ export function useParkingGarage() {
     return { success: true, message: `Vehicle ${normalizedPlate} checked in at spot ${availableSpot.id}.`, spotId: availableSpot.id };
   }, [spots, findCarByPlate, hasAvailability]);
 
-  const checkOut = useCallback((plate: string): { success: boolean; message: string; fee?: number; duration?: number } => {
+  const checkOut = useCallback((plate: string): { success: boolean; message: string; fee?: number; duration?: number; transaction?: Transaction } => {
     const normalizedPlate = plate.toUpperCase().trim();
     const car = findCarByPlate(normalizedPlate);
 
@@ -135,7 +135,7 @@ export function useParkingGarage() {
 
     setTransactions(prev => [transaction, ...prev]);
 
-    return { success: true, message: `Vehicle ${normalizedPlate} checked out. Fee: ₹${fee} for ${durationHours} hour(s).`, fee, duration: durationHours };
+    return { success: true, message: `Vehicle ${normalizedPlate} checked out. Fee: ₹${fee} for ${durationHours} hour(s).`, fee, duration: durationHours, transaction };
   }, [findCarByPlate, pricing]);
 
   const getAvailabilitySummary = useCallback((): AvailabilitySummary => {

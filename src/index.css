@@ -1,1 +1,255 @@
 @import "tailwindcss";
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   Global Design Tokens
+   ───────────────────────────────────────────────────────────────────────────── */
+:root {
+  --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  --font-display: 'Space Grotesk', 'Plus Jakarta Sans', sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+
+  --grad-primary: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a855f7 100%);
+  --grad-success: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  --grad-warning: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  --grad-danger: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  --grad-sky: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+  --grad-bg: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+}
+
+* {
+  font-family: var(--font-sans);
+}
+
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  background: var(--grad-bg);
+  background-attachment: fixed;
+  color: #0f172a;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   Typography helpers
+   ───────────────────────────────────────────────────────────────────────────── */
+.font-display {
+  font-family: var(--font-display);
+  letter-spacing: -0.02em;
+}
+
+.font-mono-plate {
+  font-family: var(--font-mono);
+  letter-spacing: 0.08em;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   Custom animations
+   ───────────────────────────────────────────────────────────────────────────── */
+@keyframes slide-in-right {
+  from { transform: translateX(120%); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+@keyframes slide-out-right {
+  from { transform: translateX(0);    opacity: 1; }
+  to   { transform: translateX(120%); opacity: 0; }
+}
+@keyframes fade-up {
+  from { transform: translateY(12px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+@keyframes pop-in {
+  0%   { transform: scale(0.8); opacity: 0; }
+  60%  { transform: scale(1.05); opacity: 1; }
+  100% { transform: scale(1);    opacity: 1; }
+}
+@keyframes pulse-ring {
+  0%   { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.55); }
+  70%  { box-shadow: 0 0 0 12px rgba(16, 185, 129, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+}
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+@keyframes car-drive-in {
+  0%   { transform: translateX(-60px) rotate(-4deg); opacity: 0; }
+  60%  { transform: translateX(6px) rotate(1deg);    opacity: 1; }
+  100% { transform: translateX(0) rotate(0);         opacity: 1; }
+}
+@keyframes car-drive-out {
+  0%   { transform: translateX(0) rotate(0);         opacity: 1; }
+  100% { transform: translateX(60px) rotate(4deg);   opacity: 0; }
+}
+@keyframes bounce-in {
+  0%   { transform: scale(0.3); opacity: 0; }
+  50%  { transform: scale(1.08); }
+  70%  { transform: scale(0.95); }
+  100% { transform: scale(1);   opacity: 1; }
+}
+@keyframes glow {
+  0%, 100% { box-shadow: 0 0 20px rgba(99, 102, 241, 0.3); }
+  50%      { box-shadow: 0 0 30px rgba(99, 102, 241, 0.6); }
+}
+@keyframes ticker {
+  from { transform: translateY(100%); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+.animate-slide-in   { animation: slide-in-right 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+.animate-slide-out  { animation: slide-out-right 0.3s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+.animate-fade-up    { animation: fade-up 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+.animate-pop-in     { animation: pop-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+.animate-pulse-ring { animation: pulse-ring 2s infinite; }
+.animate-bounce-in  { animation: bounce-in 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+.animate-glow       { animation: glow 2.5s ease-in-out infinite; }
+.animate-car-in     { animation: car-drive-in 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+.animate-car-out    { animation: car-drive-out 0.5s ease-in forwards; }
+.animate-ticker     { animation: ticker 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+
+.shimmer-bg {
+  background: linear-gradient(90deg, #f1f5f9 0%, #e2e8f0 50%, #f1f5f9 100%);
+  background-size: 200% 100%;
+  animation: shimmer 1.8s infinite;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   Glass / gradient cards
+   ───────────────────────────────────────────────────────────────────────────── */
+.glass {
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+}
+
+.gradient-text {
+  background: var(--grad-primary);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+
+.gradient-primary { background: var(--grad-primary); }
+.gradient-success { background: var(--grad-success); }
+.gradient-warning { background: var(--grad-warning); }
+.gradient-danger  { background: var(--grad-danger); }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   Interactive spots
+   ───────────────────────────────────────────────────────────────────────────── */
+.spot-tile {
+  transition: all 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+.spot-tile::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at var(--mx, 50%) var(--my, 50%), rgba(255,255,255,0.4), transparent 60%);
+  opacity: 0;
+  transition: opacity 0.3s;
+  pointer-events: none;
+}
+.spot-tile:hover {
+  transform: translateY(-3px) scale(1.06);
+  box-shadow: 0 10px 25px -10px rgba(0,0,0,0.25);
+}
+.spot-tile:hover::after { opacity: 1; }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   Buttons
+   ───────────────────────────────────────────────────────────────────────────── */
+.btn-primary {
+  background: var(--grad-primary);
+  color: white;
+  font-weight: 600;
+  transition: all 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+  position: relative;
+  overflow: hidden;
+}
+.btn-primary::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,0.25), transparent);
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 24px -8px rgba(99, 102, 241, 0.5);
+}
+.btn-primary:hover::before { opacity: 1; }
+.btn-primary:active { transform: translateY(0); }
+
+.btn-success {
+  background: var(--grad-success);
+  color: white;
+  font-weight: 600;
+  transition: all 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.btn-success:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 24px -8px rgba(16, 185, 129, 0.5);
+}
+
+.btn-warning {
+  background: var(--grad-warning);
+  color: white;
+  font-weight: 600;
+  transition: all 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.btn-warning:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 24px -8px rgba(245, 158, 11, 0.5);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   Inputs
+   ───────────────────────────────────────────────────────────────────────────── */
+.input-plate {
+  font-family: var(--font-mono);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  transition: all 0.25s;
+}
+.input-plate:focus {
+  box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   Scrollbar
+   ───────────────────────────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   Tab underline
+   ───────────────────────────────────────────────────────────────────────────── */
+.tab-btn {
+  position: relative;
+  transition: color 0.25s;
+}
+.tab-btn::after {
+  content: '';
+  position: absolute;
+  bottom: -1px; left: 50%;
+  width: 0; height: 3px;
+  background: var(--grad-primary);
+  border-radius: 3px 3px 0 0;
+  transition: all 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+  transform: translateX(-50%);
+}
+.tab-btn.active::after { width: 100%; }
+.tab-btn.active { color: #4f46e5; }
