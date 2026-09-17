@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { SpotType } from '../types';
 import { INDIAN_STATES } from '../utils/pricing';
 import { useToast } from './Toast';
+import { LicensePlateScanner } from './LicensePlateScanner';
 
 interface CheckInProps {
   onCheckIn: (plate: string, spotType: SpotType) => { success: boolean; message: string; spotId?: string };
@@ -13,7 +14,19 @@ export function CheckIn({ onCheckIn, hasAvailability }: CheckInProps) {
   const [spotType, setSpotType] = useState<SpotType>('standard');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successAnimation, setSuccessAnimation] = useState(false);
+  const [showScanner, setShowScanner] = useState(false);
   const { addToast } = useToast();
+
+  const handlePlateDetected = (detectedPlate: string, confidence: number) => {
+    setPlate(detectedPlate);
+    setShowScanner(false);
+    addToast({
+      type: 'success',
+      title: 'Plate Detected',
+      message: `License plate ${detectedPlate} recognized with ${Math.round(confidence)}% confidence`,
+      icon: '📷',
+    });
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -78,21 +91,36 @@ export function CheckIn({ onCheckIn, hasAvailability }: CheckInProps) {
           <label className="block text-sm font-semibold text-gray-700 mb-2">
             Vehicle Registration Number
           </label>
-          <div className="relative">
-            <input
-              type="text"
-              value={plate}
-              onChange={(e) => setPlate(e.target.value.toUpperCase())}
-              placeholder="MH 12 AB 1234"
-              className="input-plate w-full px-4 py-3.5 border-2 border-gray-200 rounded-xl focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 text-lg font-bold bg-gray-50 focus:bg-white transition-all"
-              maxLength={15}
+          <div className="flex gap-2">
+            <div className="relative flex-1">
+              <input
+                type="text"
+                value={plate}
+                onChange={(e) => setPlate(e.target.value.toUpperCase())}
+                placeholder="MH 12 AB 1234"
+                className="input-plate w-full px-4 py-3.5 border-2 border-gray-200 rounded-xl focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 text-lg font-bold bg-gray-50 focus:bg-white transition-all"
+                maxLength={15}
+                disabled={isSubmitting}
+              />
+              {successAnimation && (
+                <div className="absolute right-4 top-1/2 -translate-y-1/2 animate-bounce-in">
+                  <span className="text-3xl">✅</span>
+                </div>
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowScanner(true)}
               disabled={isSubmitting}
-            />
-            {successAnimation && (
-              <div className="absolute right-4 top-1/2 -translate-y-1/2 animate-bounce-in">
-                <span className="text-3xl">✅</span>
-              </div>
-            )}
+              className="px-4 py-3.5 bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-xl hover:shadow-lg hover:shadow-indigo-200 hover:-translate-y-0.5 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center gap-2"
+              title="Scan license plate with camera"
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              <span className="hidden sm:inline font-semibold text-sm">Scan</span>
+            </button>
           </div>
           <p className="mt-1.5 text-xs text-gray-400 flex items-center gap-1">
             <span>💡</span>
@@ -178,6 +206,14 @@ export function CheckIn({ onCheckIn, hasAvailability }: CheckInProps) {
           )}
         </button>
       </form>
+
+      {/* License Plate Scanner Modal */}
+      {showScanner && (
+        <LicensePlateScanner
+          onPlateDetected={handlePlateDetected}
+          onClose={() => setShowScanner(false)}
+        />
+      )}
     </div>
   );
 }
