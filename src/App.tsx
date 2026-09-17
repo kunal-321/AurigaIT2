@@ -9,6 +9,7 @@ import { PricingSettings } from './components/PricingSettings';
 import { ToastProvider, useToast } from './components/Toast';
 import { LiveClock } from './components/LiveClock';
 import { AnimatedCounter } from './components/AnimatedCounter';
+import { ClockEndpoint } from './components/ClockEndpoint';
 import { clearStorage, getStorageInfo } from './utils/storage';
 
 type Tab = 'operations' | 'overview' | 'log' | 'settings';
@@ -101,6 +102,8 @@ function AppContent() {
             </div>
             <div className="space-y-6">
               <CheckOut onCheckOut={garage.checkOut} parkedPlates={parkedPlates} />
+              {/* Level 2 — T2: POST /clock endpoint */}
+              <ClockEndpoint onClock={garage.autoCloseLongStay} />
               {/* Quick availability */}
               <QuickAvailability summary={summary} />
             </div>

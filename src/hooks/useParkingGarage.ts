@@ -179,6 +179,63 @@ export function useParkingGarage() {
     return summary;
   }, [spots]);
 
+  /**
+   * Level 2 — T2: Auto-close vehicles parked over 24 hours.
+   * Simulates POST /clock endpoint (nightly job).
+   */
+  const autoCloseLongStay = useCallback((): {
+    closed: Array<{ plate: string; fee: number; duration: number }>;
+    totalRevenue: number;
+  } => {
+    const now = new Date();
+    const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+    
+    const longStayVehicles = parkedCars.filter(car => 
+      car.checkInTime < twentyFourHoursAgo
+    );
+
+    const closed: Array<{ plate: string; fee: number; duration: number }> = [];
+    let totalRevenue = 0;
+
+    longStayVehicles.forEach(car => {
+      const { fee, durationHours } = calculateFee(car.checkInTime, now, car.spotType, pricing);
+
+      // Free the spot
+      setSpots(prev => prev.map(s =>
+        s.id === car.spotId ? { ...s, occupied: false } : s
+      ));
+
+      // Create transaction
+      const transaction: Transaction = {
+        id: `TXN-AUTO-${Date.now()}-${car.plate}`,
+        plate: car.plate,
+        spotId: car.spotId,
+        spotType: car.spotType,
+        checkInTime: car.checkInTime,
+        checkOutTime: now,
+        durationHours,
+        fee,
+      };
+
+      setTransactions(prev => [transaction, ...prev]);
+
+      closed.push({
+        plate: car.plate,
+        fee,
+        duration: durationHours,
+      });
+
+      totalRevenue += fee;
+    });
+
+    // Remove all long-stay vehicles from parkedCars
+    setParkedCars(prev => 
+      prev.filter(car => car.checkInTime >= twentyFourHoursAgo)
+    );
+
+    return { closed, totalRevenue };
+  }, [parkedCars, pricing]);
+
   return {
     spots,
     parkedCars,
@@ -191,6 +248,7 @@ export function useParkingGarage() {
     checkIn,
     checkOut,
     getAvailabilitySummary,
+    autoCloseLongStay,
   };
 }
 
