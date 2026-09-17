@@ -6,6 +6,7 @@ import { SpotOverview } from './components/SpotOverview';
 import { CarLookup } from './components/CarLookup';
 import { TransactionLog } from './components/TransactionLog';
 import { PricingSettings } from './components/PricingSettings';
+import { Reports } from './components/Reports';
 import { ToastProvider, useToast } from './components/Toast';
 import { LiveClock } from './components/LiveClock';
 import { AnimatedCounter } from './components/AnimatedCounter';
@@ -13,7 +14,7 @@ import { ClockEndpoint } from './components/ClockEndpoint';
 import { ValetTransfer } from './components/ValetTransfer';
 import { clearStorage, getStorageInfo } from './utils/storage';
 
-type Tab = 'operations' | 'overview' | 'log' | 'settings';
+type Tab = 'operations' | 'overview' | 'log' | 'settings' | 'reports';
 
 function AppContent() {
   const garage = useParkingGarage();
@@ -24,6 +25,7 @@ function AppContent() {
     { id: 'operations', label: 'Operations', icon: '🅿️', desc: 'Check In / Out' },
     { id: 'overview', label: 'Garage Map', icon: '🗺️', desc: 'Spot Overview' },
     { id: 'log', label: 'Transactions', icon: '📋', desc: 'History & Revenue' },
+    { id: 'reports', label: 'Reports', icon: '📊', desc: 'Analytics & Export' },
     { id: 'settings', label: 'Rates', icon: '💰', desc: 'Pricing Config' },
   ];
 
@@ -126,6 +128,15 @@ function AppContent() {
         {activeTab === 'log' && (
           <div className="max-w-3xl mx-auto animate-fade-up">
             <TransactionLog transactions={garage.transactions} />
+          </div>
+        )}
+
+        {activeTab === 'reports' && (
+          <div className="max-w-5xl mx-auto animate-fade-up">
+            <Reports 
+              transactions={garage.transactions}
+              parkedCars={garage.parkedCars}
+            />
           </div>
         )}
 
