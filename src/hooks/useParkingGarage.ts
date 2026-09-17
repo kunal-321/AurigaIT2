@@ -180,6 +180,65 @@ export function useParkingGarage() {
   }, [spots]);
 
   /**
+   * Level 3 — T6: Transfer an open session to a different plate (valet hand-off).
+   * Spot and entry time carry over.
+   */
+  const transferSession = useCallback((fromPlate: string, toPlate: string): {
+    success: boolean;
+    message: string;
+  } => {
+    const normalizedFrom = fromPlate.toUpperCase().trim();
+    const normalizedTo = toPlate.toUpperCase().trim();
+
+    // Validation: source must exist
+    const sourceCar = findCarByPlate(normalizedFrom);
+    if (!sourceCar) {
+      return {
+        success: false,
+        message: `Vehicle ${normalizedFrom} is not currently parked in the garage.`,
+      };
+    }
+
+    // Validation: destination must not already be parked
+    if (findCarByPlate(normalizedTo)) {
+      return {
+        success: false,
+        message: `Vehicle ${normalizedTo} is already parked in the garage. Cannot transfer.`,
+      };
+    }
+
+    // Validation: plates must be different
+    if (normalizedFrom === normalizedTo) {
+      return {
+        success: false,
+        message: 'Source and destination plates are the same.',
+      };
+    }
+
+    // Validation: destination plate must not be empty
+    if (!normalizedTo) {
+      return {
+        success: false,
+        message: 'Destination plate cannot be empty.',
+      };
+    }
+
+    // Perform the transfer: update the plate, keep spot and checkInTime
+    setParkedCars(prev =>
+      prev.map(car =>
+        car.plate === normalizedFrom
+          ? { ...car, plate: normalizedTo }
+          : car
+      )
+    );
+
+    return {
+      success: true,
+      message: `Session transferred from ${normalizedFrom} to ${normalizedTo}. Spot ${sourceCar.spotId} and entry time preserved.`,
+    };
+  }, [findCarByPlate]);
+
+  /**
    * Level 2 — T2: Auto-close vehicles parked over 24 hours.
    * Simulates POST /clock endpoint (nightly job).
    */
@@ -249,6 +308,7 @@ export function useParkingGarage() {
     checkOut,
     getAvailabilitySummary,
     autoCloseLongStay,
+    transferSession,
   };
 }
 
