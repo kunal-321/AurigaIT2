@@ -122,6 +122,30 @@ function validateTransaction(txn: unknown): Transaction | null {
   const checkOutTime = new Date(t.checkOutTime);
   if (isNaN(checkInTime.getTime()) || isNaN(checkOutTime.getTime())) return null;
 
+  // Validate optional payment fields
+  const paymentFields: Partial<Pick<Transaction, 'paymentId' | 'paymentMethod' | 'paymentStatus' | 'paymentTimestamp'>> = {};
+  
+  if (typeof t.paymentId === 'string') {
+    paymentFields.paymentId = t.paymentId;
+  }
+  
+  if (typeof t.paymentMethod === 'string' && 
+      ['upi', 'card', 'netbanking', 'wallet', 'cash'].includes(t.paymentMethod)) {
+    paymentFields.paymentMethod = t.paymentMethod as Transaction['paymentMethod'];
+  }
+  
+  if (typeof t.paymentStatus === 'string' && 
+      ['success', 'failed', 'pending'].includes(t.paymentStatus)) {
+    paymentFields.paymentStatus = t.paymentStatus as Transaction['paymentStatus'];
+  }
+  
+  if (typeof t.paymentTimestamp === 'string') {
+    const paymentTimestamp = new Date(t.paymentTimestamp);
+    if (!isNaN(paymentTimestamp.getTime())) {
+      paymentFields.paymentTimestamp = paymentTimestamp;
+    }
+  }
+
   return {
     id: t.id,
     plate: t.plate,
@@ -131,6 +155,7 @@ function validateTransaction(txn: unknown): Transaction | null {
     checkOutTime,
     durationHours: t.durationHours,
     fee: t.fee,
+    ...paymentFields,
   };
 }
 
@@ -358,6 +383,11 @@ export function saveToStorage(
         checkOutTime: t.checkOutTime.toISOString(),
         durationHours: t.durationHours,
         fee: t.fee,
+        // Include payment fields if present
+        ...(t.paymentId && { paymentId: t.paymentId }),
+        ...(t.paymentMethod && { paymentMethod: t.paymentMethod }),
+        ...(t.paymentStatus && { paymentStatus: t.paymentStatus }),
+        ...(t.paymentTimestamp && { paymentTimestamp: t.paymentTimestamp.toISOString() }),
       })),
       pricing,
     };

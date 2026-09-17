@@ -126,7 +126,15 @@ export function useParkingGarage() {
     return { success: true, message: `Vehicle ${normalizedPlate} checked in at spot ${availableSpot.id}.`, spotId: availableSpot.id };
   }, [spots, findCarByPlate, hasAvailability]);
 
-  const checkOut = useCallback((plate: string): { success: boolean; message: string; fee?: number; duration?: number; transaction?: Transaction } => {
+  const checkOut = useCallback((
+    plate: string,
+    paymentDetails?: {
+      paymentId: string;
+      paymentMethod: 'upi' | 'card' | 'netbanking' | 'wallet' | 'cash';
+      paymentStatus: 'success' | 'failed' | 'pending';
+      paymentTimestamp: Date;
+    }
+  ): { success: boolean; message: string; fee?: number; duration?: number; transaction?: Transaction } => {
     const normalizedPlate = plate.toUpperCase().trim();
     const car = findCarByPlate(normalizedPlate);
 
@@ -152,6 +160,13 @@ export function useParkingGarage() {
       checkOutTime: now,
       durationHours,
       fee,
+      // Include payment details if provided
+      ...(paymentDetails && {
+        paymentId: paymentDetails.paymentId,
+        paymentMethod: paymentDetails.paymentMethod,
+        paymentStatus: paymentDetails.paymentStatus,
+        paymentTimestamp: paymentDetails.paymentTimestamp,
+      }),
     };
 
     setTransactions(prev => [transaction, ...prev]);

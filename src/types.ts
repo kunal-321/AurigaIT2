@@ -23,6 +23,11 @@ export interface Transaction {
   checkOutTime: Date;
   durationHours: number;
   fee: number;
+  // Payment information (added for Razorpay integration)
+  paymentId?: string;
+  paymentMethod?: 'upi' | 'card' | 'netbanking' | 'wallet' | 'cash';
+  paymentStatus?: 'success' | 'failed' | 'pending';
+  paymentTimestamp?: Date;
 }
 
 export interface SpotTypePricing {
