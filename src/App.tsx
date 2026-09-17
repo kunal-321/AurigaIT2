@@ -9,6 +9,7 @@ import { PricingSettings } from './components/PricingSettings';
 import { ToastProvider, useToast } from './components/Toast';
 import { LiveClock } from './components/LiveClock';
 import { AnimatedCounter } from './components/AnimatedCounter';
+import { clearStorage, getStorageInfo } from './utils/storage';
 
 type Tab = 'operations' | 'overview' | 'log' | 'settings';
 
@@ -134,6 +135,11 @@ function AppContent() {
               <span className="font-display font-bold text-gray-700">ParkDesk</span>
               <span className="text-gray-300">•</span>
               <span>Multi-Level Parking Management System</span>
+              <span className="text-gray-300">•</span>
+              <span className="flex items-center gap-1">
+                <span className="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
+                <span>Data auto-saved</span>
+              </span>
             </div>
             <div className="flex items-center gap-3">
               <span className="px-2 py-1 bg-gray-100 rounded-md font-mono text-[10px]">
@@ -145,6 +151,17 @@ function AppContent() {
               <span className="px-2 py-1 bg-gray-100 rounded-md font-mono text-[10px]">
                 ₹{garage.pricing.dailyCap} max
               </span>
+              <button
+                onClick={() => {
+                  if (window.confirm('Clear all saved data? This will reset spots, parked vehicles, and transactions.')) {
+                    clearStorage();
+                    window.location.reload();
+                  }
+                }}
+                className="px-3 py-1 bg-red-50 hover:bg-red-100 text-red-600 rounded-md font-semibold transition-colors"
+              >
+                Clear Data
+              </button>
             </div>
           </div>
         </div>

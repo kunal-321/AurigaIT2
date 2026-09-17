@@ -1,6 +1,7 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { ParkingSpot, ParkedCar, Transaction, SpotType, PricingConfig } from '../types';
 import { calculateFee, DEFAULT_PRICING } from '../utils/pricing';
+import { loadFromStorage, saveToStorage } from '../utils/storage';
 
 // Generate initial spots for an Indian city-centre garage
 function generateSpots(): ParkingSpot[] {
@@ -54,10 +55,30 @@ export type AvailabilitySummary = {
 };
 
 export function useParkingGarage() {
-  const [spots, setSpots] = useState<ParkingSpot[]>(generateSpots);
-  const [parkedCars, setParkedCars] = useState<ParkedCar[]>([]);
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [pricing, setPricing] = useState<PricingConfig>(DEFAULT_PRICING);
+  // Load all data from localStorage once on initialization
+  const [initialData] = useState(() => loadFromStorage());
+
+  // Initialize state from localStorage or use defaults
+  const [spots, setSpots] = useState<ParkingSpot[]>(
+    initialData ? initialData.spots : generateSpots()
+  );
+
+  const [parkedCars, setParkedCars] = useState<ParkedCar[]>(
+    initialData ? initialData.parkedCars : []
+  );
+
+  const [transactions, setTransactions] = useState<Transaction[]>(
+    initialData ? initialData.transactions : []
+  );
+
+  const [pricing, setPricing] = useState<PricingConfig>(
+    initialData ? initialData.pricing : DEFAULT_PRICING
+  );
+
+  // Persist to localStorage whenever state changes
+  useEffect(() => {
+    saveToStorage(spots, parkedCars, transactions, pricing);
+  }, [spots, parkedCars, transactions, pricing]);
 
   const getAvailableSpots = useCallback((type?: SpotType): ParkingSpot[] => {
     return spots.filter(s => !s.occupied && (!type || s.type === type));
