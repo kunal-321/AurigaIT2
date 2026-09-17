@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ParkedCar } from '../types';
+import { ParkedCar, SpotType } from '../types';
 import { formatDateTime } from '../utils/pricing';
 
 interface CarLookupProps {
@@ -28,6 +28,24 @@ export function CarLookup({ parkedCars, findCarByPlate }: CarLookupProps) {
     return `${Math.floor(diffHrs / 24)}d ago`;
   };
 
+  const getSpotBadge = (spotType: SpotType) => {
+    switch (spotType) {
+      case 'twoWheeler': return { bg: 'bg-sky-200', text: 'text-sky-800', label: 'TWO-WHEELER' };
+      case 'compact': return { bg: 'bg-blue-200', text: 'text-blue-800', label: 'COMPACT' };
+      case 'standard': return { bg: 'bg-purple-200', text: 'text-purple-800', label: 'STANDARD' };
+      case 'ev': return { bg: 'bg-amber-200', text: 'text-amber-800', label: 'EV' };
+    }
+  };
+
+  const getSpotIcon = (spotType: SpotType) => {
+    switch (spotType) {
+      case 'twoWheeler': return '🏍️';
+      case 'compact': return '🚗';
+      case 'standard': return '🚙';
+      case 'ev': return '⚡';
+    }
+  };
+
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
       <div className="flex items-center gap-3 mb-5">
@@ -44,7 +62,7 @@ export function CarLookup({ parkedCars, findCarByPlate }: CarLookupProps) {
           type="text"
           value={query}
           onChange={(e) => { setQuery(e.target.value); setFound(undefined); }}
-          placeholder="Enter license plate..."
+          placeholder="Enter vehicle number..."
           className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 font-mono uppercase"
         />
         <button
@@ -60,19 +78,16 @@ export function CarLookup({ parkedCars, findCarByPlate }: CarLookupProps) {
           {found === null ? (
             <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
               <p className="text-sm font-medium text-yellow-800">
-                No car found with plate "{query.toUpperCase().trim()}". It may have already checked out.
+                No vehicle found with number "{query.toUpperCase().trim()}". It may have already checked out.
               </p>
             </div>
           ) : (
             <div className="p-4 bg-purple-50 border border-purple-200 rounded-lg">
               <div className="flex items-center gap-2 mb-3">
+                <span className="text-xl">{getSpotIcon(found.spotType)}</span>
                 <span className="text-2xl font-bold font-mono text-purple-900">{found.plate}</span>
-                <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
-                  found.spotType === 'ev' ? 'bg-amber-200 text-amber-800' :
-                  found.spotType === 'compact' ? 'bg-blue-200 text-blue-800' :
-                  'bg-purple-200 text-purple-800'
-                }`}>
-                  {found.spotType.toUpperCase()}
+                <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${getSpotBadge(found.spotType).bg} ${getSpotBadge(found.spotType).text}`}>
+                  {getSpotBadge(found.spotType).label}
                 </span>
               </div>
               <div className="grid grid-cols-2 gap-2 text-sm">
@@ -106,12 +121,8 @@ export function CarLookup({ parkedCars, findCarByPlate }: CarLookupProps) {
                 <span className="font-mono font-semibold text-gray-900">{car.plate}</span>
                 <div className="flex items-center gap-2">
                   <span className="text-gray-500">{car.spotId}</span>
-                  <span className={`px-1.5 py-0.5 rounded text-xs font-medium ${
-                    car.spotType === 'ev' ? 'bg-amber-100 text-amber-700' :
-                    car.spotType === 'compact' ? 'bg-blue-100 text-blue-700' :
-                    'bg-gray-200 text-gray-700'
-                  }`}>
-                    {car.spotType}
+                  <span className={`px-1.5 py-0.5 rounded text-xs font-medium ${getSpotBadge(car.spotType).bg} ${getSpotBadge(car.spotType).text}`}>
+                    {getSpotBadge(car.spotType).label}
                   </span>
                 </div>
               </div>

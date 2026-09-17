@@ -1,12 +1,9 @@
-import { ParkingSpot } from '../types';
+import { ParkingSpot, SpotType } from '../types';
+import { AvailabilitySummary } from '../hooks/useParkingGarage';
 
 interface SpotOverviewProps {
   spots: ParkingSpot[];
-  availabilitySummary: {
-    compact: { total: number; available: number; occupied: number };
-    standard: { total: number; available: number; occupied: number };
-    ev: { total: number; available: number; occupied: number };
-  };
+  availabilitySummary: AvailabilitySummary;
 }
 
 export function SpotOverview({ spots, availabilitySummary }: SpotOverviewProps) {
@@ -14,10 +11,11 @@ export function SpotOverview({ spots, availabilitySummary }: SpotOverviewProps) 
   const totalOccupied = spots.filter(s => s.occupied).length;
   const totalAvailable = totalSpots - totalOccupied;
 
-  const typeConfig = {
-    compact: { label: 'Compact', icon: '🚗', color: 'blue' },
-    standard: { label: 'Standard', icon: '🚙', color: 'purple' },
-    ev: { label: 'EV / Charger', icon: '⚡', color: 'amber' },
+  const typeConfig: { [K in SpotType]: { label: string; icon: string; desc: string } } = {
+    twoWheeler: { label: 'Two-Wheeler', icon: '🏍️', desc: 'Bike / Scooter' },
+    compact: { label: 'Compact', icon: '🚗', desc: 'Small Car' },
+    standard: { label: 'Standard', icon: '🚙', desc: 'Sedan / SUV' },
+    ev: { label: 'EV / Charger', icon: '⚡', desc: 'Electric Vehicle' },
   };
 
   return (
@@ -49,17 +47,20 @@ export function SpotOverview({ spots, availabilitySummary }: SpotOverviewProps) 
 
       {/* Per-type summary */}
       <div className="space-y-3">
-        {(['compact', 'standard', 'ev'] as const).map((type) => {
+        {(['twoWheeler', 'compact', 'standard', 'ev'] as SpotType[]).map((type) => {
           const config = typeConfig[type];
           const summary = availabilitySummary[type];
           const occupancyRate = summary.total > 0 ? (summary.occupied / summary.total) * 100 : 0;
-          
+
           return (
             <div key={type} className="p-3 bg-gray-50 rounded-lg">
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
                   <span className="text-lg">{config.icon}</span>
-                  <span className="font-medium text-gray-900 text-sm">{config.label}</span>
+                  <div>
+                    <span className="font-medium text-gray-900 text-sm">{config.label}</span>
+                    <span className="text-xs text-gray-400 ml-1">({config.desc})</span>
+                  </div>
                 </div>
                 <span className="text-sm font-semibold text-gray-700">
                   {summary.available}/{summary.total} free

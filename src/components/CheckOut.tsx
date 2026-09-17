@@ -12,7 +12,7 @@ export function CheckOut({ onCheckOut, parkedPlates }: CheckOutProps) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!plate.trim()) return;
-    
+
     const res = onCheckOut(plate);
     setResult(res);
     if (res.success) {
@@ -33,14 +33,14 @@ export function CheckOut({ onCheckOut, parkedPlates }: CheckOutProps) {
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">License Plate</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Vehicle Number</label>
           <input
             type="text"
             value={plate}
             onChange={(e) => { setPlate(e.target.value); setResult(null); }}
-            placeholder="e.g., ABC-1234"
+            placeholder="e.g., MH 12 AB 1234"
             className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-lg font-mono uppercase tracking-wider"
-            maxLength={10}
+            maxLength={15}
             list="parked-plates"
           />
           <datalist id="parked-plates">
@@ -53,7 +53,7 @@ export function CheckOut({ onCheckOut, parkedPlates }: CheckOutProps) {
           disabled={!plate.trim()}
           className="w-full py-3 bg-orange-600 text-white font-semibold rounded-lg hover:bg-orange-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
         >
-          Check Out & Charge
+          🧾 Check Out & Collect Fee
         </button>
       </form>
 
@@ -71,9 +71,10 @@ export function CheckOut({ onCheckOut, parkedPlates }: CheckOutProps) {
                 <span className="font-semibold text-gray-900">{result.duration} hr{result.duration !== 1 ? 's' : ''}</span>
               </div>
               <div className="flex justify-between items-center mt-1">
-                <span className="text-sm text-gray-600">Total Fee</span>
-                <span className="text-2xl font-bold text-green-700">${result.fee.toFixed(2)}</span>
+                <span className="text-sm text-gray-600">Amount Payable</span>
+                <span className="text-2xl font-bold text-green-700">₹{result.fee}</span>
               </div>
+              <p className="text-[11px] text-gray-400 mt-1 text-right">Accept UPI / Cash / Card</p>
             </div>
           )}
         </div>

@@ -1,4 +1,4 @@
-import { Transaction } from '../types';
+import { Transaction, SpotType } from '../types';
 import { formatDateTime, formatCurrency, formatDuration } from '../utils/pricing';
 
 interface TransactionLogProps {
@@ -7,6 +7,24 @@ interface TransactionLogProps {
 
 export function TransactionLog({ transactions }: TransactionLogProps) {
   const totalRevenue = transactions.reduce((sum, t) => sum + t.fee, 0);
+
+  const getSpotIcon = (spotType: SpotType) => {
+    switch (spotType) {
+      case 'twoWheeler': return '🏍️';
+      case 'compact': return '🚗';
+      case 'standard': return '🚙';
+      case 'ev': return '⚡';
+    }
+  };
+
+  const getSpotBadge = (spotType: SpotType) => {
+    switch (spotType) {
+      case 'twoWheeler': return 'bg-sky-100 text-sky-700';
+      case 'compact': return 'bg-blue-100 text-blue-700';
+      case 'standard': return 'bg-purple-100 text-purple-700';
+      case 'ev': return 'bg-amber-100 text-amber-700';
+    }
+  };
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
@@ -21,7 +39,7 @@ export function TransactionLog({ transactions }: TransactionLogProps) {
         </div>
         {transactions.length > 0 && (
           <div className="text-right">
-            <div className="text-xs text-gray-500">Today's Revenue</div>
+            <div className="text-xs text-gray-500">Today's Collection</div>
             <div className="text-lg font-bold text-green-700">{formatCurrency(totalRevenue)}</div>
           </div>
         )}
@@ -39,12 +57,8 @@ export function TransactionLog({ transactions }: TransactionLogProps) {
           {transactions.map((txn) => (
             <div key={txn.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
               <div className="flex items-center gap-3">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${
-                  txn.spotType === 'ev' ? 'bg-amber-100 text-amber-700' :
-                  txn.spotType === 'compact' ? 'bg-blue-100 text-blue-700' :
-                  'bg-purple-100 text-purple-700'
-                }`}>
-                  {txn.spotType === 'ev' ? '⚡' : txn.spotType === 'compact' ? '🚗' : '🚙'}
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm ${getSpotBadge(txn.spotType)}`}>
+                  {getSpotIcon(txn.spotType)}
                 </div>
                 <div>
                   <div className="font-mono font-semibold text-gray-900 text-sm">{txn.plate}</div>

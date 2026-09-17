@@ -1,4 +1,4 @@
-export type SpotType = 'compact' | 'standard' | 'ev';
+export type SpotType = 'twoWheeler' | 'compact' | 'standard' | 'ev';
 
 export interface ParkingSpot {
   id: string;

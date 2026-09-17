@@ -25,7 +25,7 @@ export function PricingSettings({ pricing, onUpdate }: PricingSettingsProps) {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
         </div>
-        <h2 className="text-lg font-semibold text-gray-900">Pricing Rates</h2>
+        <h2 className="text-lg font-semibold text-gray-900">Parking Rates (₹)</h2>
       </div>
 
       <div className="space-y-4">
@@ -34,10 +34,10 @@ export function PricingSettings({ pricing, onUpdate }: PricingSettingsProps) {
             First Hour Rate
           </label>
           <div className="relative">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 font-semibold">₹</span>
             <input
               type="number"
-              step="0.50"
+              step="5"
               min="0"
               value={localPricing.firstHourRate}
               onChange={(e) => setLocalPricing(p => ({ ...p, firstHourRate: parseFloat(e.target.value) || 0 }))}
@@ -51,10 +51,10 @@ export function PricingSettings({ pricing, onUpdate }: PricingSettingsProps) {
             Each Additional Hour
           </label>
           <div className="relative">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 font-semibold">₹</span>
             <input
               type="number"
-              step="0.50"
+              step="5"
               min="0"
               value={localPricing.additionalHourRate}
               onChange={(e) => setLocalPricing(p => ({ ...p, additionalHourRate: parseFloat(e.target.value) || 0 }))}
@@ -68,10 +68,10 @@ export function PricingSettings({ pricing, onUpdate }: PricingSettingsProps) {
             Daily Maximum Cap
           </label>
           <div className="relative">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 font-semibold">₹</span>
             <input
               type="number"
-              step="1.00"
+              step="10"
               min="0"
               value={localPricing.dailyCap}
               onChange={(e) => setLocalPricing(p => ({ ...p, dailyCap: parseFloat(e.target.value) || 0 }))}
@@ -88,7 +88,7 @@ export function PricingSettings({ pricing, onUpdate }: PricingSettingsProps) {
             <li>• 4 hours: {formatCurrency(Math.min(localPricing.firstHourRate + 3 * localPricing.additionalHourRate, localPricing.dailyCap))}</li>
             <li>• 8+ hours: {formatCurrency(localPricing.dailyCap)} (daily cap)</li>
           </ul>
-          <p className="mt-2 text-xs text-gray-500 italic">Part-hours round up to the next full hour.</p>
+          <p className="mt-2 text-xs text-gray-500 italic">Part-hours round up to the next full hour. Same rates apply for all vehicle types.</p>
         </div>
 
         <button
