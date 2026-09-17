@@ -25,8 +25,22 @@ export interface Transaction {
   fee: number;
 }
 
-export interface PricingConfig {
+export interface SpotTypePricing {
   firstHourRate: number;
   additionalHourRate: number;
   dailyCap: number;
+}
+
+export interface PricingConfig {
+  // Legacy flat rates (for backward compatibility)
+  firstHourRate: number;
+  additionalHourRate: number;
+  dailyCap: number;
+  // Per-type rates (new structure)
+  byType: {
+    twoWheeler: SpotTypePricing;
+    compact: SpotTypePricing;
+    standard: SpotTypePricing;
+    ev: SpotTypePricing;
+  };
 }

@@ -142,6 +142,7 @@ function validatePricing(pricing: unknown): PricingConfig | null {
   if (!pricing || typeof pricing !== 'object') return null;
   const p = pricing as Record<string, unknown>;
 
+  // Validate legacy flat rates
   if (
     typeof p.firstHourRate !== 'number' ||
     typeof p.additionalHourRate !== 'number' ||
@@ -153,10 +154,42 @@ function validatePricing(pricing: unknown): PricingConfig | null {
     return null;
   }
 
+  // Validate per-type rates (new structure)
+  if (!p.byType || typeof p.byType !== 'object') {
+    return null;
+  }
+
+  const byType = p.byType as Record<string, unknown>;
+  const spotTypes = ['twoWheeler', 'compact', 'standard', 'ev'];
+
+  for (const type of spotTypes) {
+    if (!byType[type] || typeof byType[type] !== 'object') {
+      return null;
+    }
+
+    const typePricing = byType[type] as Record<string, unknown>;
+    if (
+      typeof typePricing.firstHourRate !== 'number' ||
+      typeof typePricing.additionalHourRate !== 'number' ||
+      typeof typePricing.dailyCap !== 'number' ||
+      typePricing.firstHourRate < 0 ||
+      typePricing.additionalHourRate < 0 ||
+      typePricing.dailyCap < 0
+    ) {
+      return null;
+    }
+  }
+
   return {
     firstHourRate: p.firstHourRate,
     additionalHourRate: p.additionalHourRate,
     dailyCap: p.dailyCap,
+    byType: {
+      twoWheeler: byType.twoWheeler as any,
+      compact: byType.compact as any,
+      standard: byType.standard as any,
+      ev: byType.ev as any,
+    },
   };
 }
 

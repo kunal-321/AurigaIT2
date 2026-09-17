@@ -1,13 +1,41 @@
-import { PricingConfig } from '../types';
+import { PricingConfig, SpotType, SpotTypePricing } from '../types';
 
+/**
+ * Default per-type pricing for Indian parking garage.
+ * Two-wheelers are cheaper, EVs might have a premium.
+ */
 export const DEFAULT_PRICING: PricingConfig = {
+  // Legacy flat rates (used as fallback)
   firstHourRate: 40,
   additionalHourRate: 20,
   dailyCap: 200,
+  // Per-type rates
+  byType: {
+    twoWheeler: { firstHourRate: 20, additionalHourRate: 10, dailyCap: 100 },
+    compact: { firstHourRate: 40, additionalHourRate: 20, dailyCap: 200 },
+    standard: { firstHourRate: 60, additionalHourRate: 30, dailyCap: 300 },
+    ev: { firstHourRate: 80, additionalHourRate: 40, dailyCap: 400 },
+  },
 };
 
 /**
- * Calculate parking fee based on duration.
+ * Get pricing for a specific spot type.
+ * Falls back to legacy flat rates if per-type not available.
+ */
+export function getPricingForType(pricing: PricingConfig, spotType: SpotType): SpotTypePricing {
+  if (pricing.byType && pricing.byType[spotType]) {
+    return pricing.byType[spotType];
+  }
+  // Fallback to legacy flat rates
+  return {
+    firstHourRate: pricing.firstHourRate,
+    additionalHourRate: pricing.additionalHourRate,
+    dailyCap: pricing.dailyCap,
+  };
+}
+
+/**
+ * Calculate parking fee based on duration and spot type.
  * - First hour at firstHourRate
  * - Each additional hour at additionalHourRate (cheaper)
  * - Daily cap applies
@@ -16,6 +44,7 @@ export const DEFAULT_PRICING: PricingConfig = {
 export function calculateFee(
   checkInTime: Date,
   checkOutTime: Date,
+  spotType: SpotType,
   pricing: PricingConfig = DEFAULT_PRICING
 ): { fee: number; durationHours: number } {
   const diffMs = checkOutTime.getTime() - checkInTime.getTime();
@@ -26,16 +55,19 @@ export function calculateFee(
 
   if (durationHours <= 0) return { fee: 0, durationHours: 0 };
 
+  // Get pricing for this spot type
+  const typePricing = getPricingForType(pricing, spotType);
+
   let fee: number;
 
   if (durationHours <= 1) {
-    fee = pricing.firstHourRate;
+    fee = typePricing.firstHourRate;
   } else {
-    fee = pricing.firstHourRate + (durationHours - 1) * pricing.additionalHourRate;
+    fee = typePricing.firstHourRate + (durationHours - 1) * typePricing.additionalHourRate;
   }
 
   // Apply daily cap
-  fee = Math.min(fee, pricing.dailyCap);
+  fee = Math.min(fee, typePricing.dailyCap);
 
   return { fee, durationHours };
 }

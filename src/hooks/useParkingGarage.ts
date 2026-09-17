@@ -135,7 +135,7 @@ export function useParkingGarage() {
     }
 
     const now = new Date();
-    const { fee, durationHours } = calculateFee(car.checkInTime, now, pricing);
+    const { fee, durationHours } = calculateFee(car.checkInTime, now, car.spotType, pricing);
 
     setSpots(prev => prev.map(s =>
       s.id === car.spotId ? { ...s, occupied: false } : s
