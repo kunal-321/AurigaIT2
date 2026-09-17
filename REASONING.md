@@ -1,300 +1,141 @@
 # Reasoning and Design Decisions
 
-## Problem Analysis
+## The Problem
 
-### Initial Requirements
-The user requested a parking garage management system for a busy multi-level city-centre parking garage with the following needs:
-1. Check-in and check-out vehicles
-2. Tiered pricing (first hour expensive, additional hours cheaper, daily cap)
-3. Part-hours round up
-4. Multiple spot types (compact, standard, EV with charger)
-5. EV cars must use EV spots
-6. Ability to check if EV spots are available
-7. Ability to find a car by license plate
-8. Transaction logging
-9. No double-parking (atomic spot assignment)
+The ask was pretty specific: build a parking management system for a busy, multi-level, city-centre garage. Not a toy demo — something an attendant could actually use during a rush.
 
-### Key Constraints
-- Must work for any garage, not a specific one
-- Attendant needs to use it during busy periods
-- Must handle large transaction logs by evening
-- Must prevent double-parking
+Breaking down what that actually meant:
 
-## Design Decisions
+- Cars need to check in and check out
+- Pricing had to be tiered — expensive first hour, cheaper after that, with a daily cap so nobody gets a $300 bill for leaving their car over the weekend
+- Partial hours round up (nobody's charging someone for 47 minutes of parking)
+- Different spot types: compact, standard, and EV with a charger
+- EVs *have* to go in EV spots — no exceptions
+- The attendant needs to see at a glance whether EV spots are free
+- Needs a quick way to find a car by plate number
+- Every transaction gets logged
+- And critically — no double-parking. Two cars can't end up assigned to the same spot.
 
-### 1. Architecture: Client-Side Only
+On top of the functional list, there were some real-world constraints hiding underneath: this has to work for *any* garage, not just one hardcoded layout. The attendant is going to be moving fast, so the interface can't get in their way. And by evening, the transaction log could be pretty long, so it needed to hold up.
 
-**Decision**: Build as a pure client-side React application with no backend.
+## How I Approached It
 
-**Rationale**:
-- The user didn't specify persistence requirements
-- Simpler to demonstrate and test
-- All data can be managed in React state
-- No need for database setup or API calls
-- Faster to build and deploy
+### Keeping it client-side, no backend
 
-**Trade-offs**:
-- Data is lost on page refresh
-- No multi-user support
-- No real persistence
+I went with a plain React app — no server, no database, everything living in React state.
 
-**Alternative Considered**: Adding localStorage for persistence, but decided against it to keep the solution focused on the core requirements.
+Honestly, the brief never asked for persistence, so building a whole backend felt like solving a problem nobody had yet. Keeping everything in-memory made this dramatically faster to build, test, and reason about. The trade-off is obvious: refresh the page and everything's gone, and there's no multi-user support. I did think about just bolting on localStorage to fix the refresh issue, but decided against it — didn't want to add complexity that wasn't actually part of what was asked for.
 
-### 2. State Management: Custom Hook
+### One hook to run it all
 
-**Decision**: Use a custom React hook (`useParkingGarage`) for all state management.
+All the parking logic lives in a single custom hook, `useParkingGarage`. It owns:
 
-**Rationale**:
-- Centralizes all parking logic in one place
-- Makes components simpler and more focused
-- Easy to test and reason about
-- No need for external state management (Redux, Zustand)
-- Follows React best practices
+- `spots` — every spot in the garage and whether it's occupied
+- `parkedCars` — whoever's currently parked
+- `transactions` — the completed history
+- `pricing` — the configurable rates
 
-**Implementation**:
-- `spots`: Array of all parking spots with occupancy status
-- `parkedCars`: Array of currently parked vehicles
-- `transactions`: Array of completed transactions
-- `pricing`: Configurable pricing settings
+Pulling everything into one hook meant the components themselves could stay dumb and focused — they just render state and call functions, they don't have to know *how* any of it works. Didn't see a reason to reach for Redux or Zustand for something this size.
 
-### 3. Data Model
+### Typing everything
 
-**Decision**: Use TypeScript interfaces for type safety.
+TypeScript throughout, mainly because it catches dumb mistakes before they ship. The core shapes:
 
-**Rationale**:
-- Catches errors at compile time
-- Makes code more maintainable
-- Better IDE support
-- Self-documenting
-
-**Key Types**:
-```typescript
+```
 ParkingSpot { id, type, label, occupied }
 ParkedCar { plate, spotId, spotType, checkInTime }
 Transaction { id, plate, spotId, spotType, checkInTime, checkOutTime, durationHours, fee }
 ```
 
-### 4. Pricing Logic
+### The pricing math
 
-**Decision**: Implement tiered pricing with daily cap.
+The algorithm:
 
-**Algorithm**:
-1. Calculate duration in minutes
-2. Round up to nearest hour (part-hours round up)
-3. If 1 hour or less: charge first hour rate
-4. If more than 1 hour: first hour rate + (additional hours × additional hour rate)
-5. Apply daily cap: min(calculated fee, daily cap)
+1. Work out how long the car's been parked, in minutes
+2. Round up to the next full hour
+3. One hour or less? Charge the first-hour rate
+4. More than that? First-hour rate, plus (extra hours × additional-hour rate)
+5. Cap it — whatever that comes to, it never exceeds the daily maximum
 
-**Rationale**:
-- Matches real-world parking garage pricing
-- Simple and predictable
-- Easy to test with edge cases
+I tested it against a handful of cases to make sure the edges held up: a flat hour charges the base rate, two hours adds one extra increment, an hour and fifteen minutes bumps up to two full hours, and anything long enough just flatlines at the daily cap.
 
-**Testing**:
-- 1 hour → first hour rate
-- 2 hours → first hour + 1 additional
-- 1 hour 15 minutes → rounds up to 2 hours
-- Very long stay → capped at daily maximum
+### Assigning spots
 
-### 5. Spot Assignment
+When a car checks in:
 
-**Decision**: Find first available spot of requested type.
+1. First, make sure it's not already parked somewhere (can't check in twice)
+2. Grab the first free spot matching the requested type
+3. Mark it occupied right away
+4. Record the assignment
 
-**Algorithm**:
-1. Check if car is already parked (prevent duplicates)
-2. Find first spot of requested type that is not occupied
-3. Mark spot as occupied atomically
-4. Record vehicle with spot assignment
+Nothing fancy — just first-available. I toyed with letting people pick a specific spot number, but that adds a UI decision and a way for people to pick something already taken, so I scrapped it. EVs land in EV spots automatically because that's just which type they select — no separate enforcement logic needed.
 
-**Rationale**:
-- Simple and efficient
-- Prevents double-parking
-- EV cars automatically get EV spots (enforced by spot type selection)
+### Splitting up the UI
 
-**Alternative Considered**: Allowing users to choose specific spots, but decided against it to keep the interface simple and prevent errors.
+Six components, each doing one job:
 
-### 6. Component Structure
+- `CheckIn` — the check-in form
+- `CheckOut` — the check-out form
+- `CarLookup` — plate search
+- `SpotOverview` — the garage map
+- `TransactionLog` — history and revenue
+- `PricingSettings` — rate configuration
 
-**Decision**: Break UI into focused, reusable components.
+Keeping them this narrow made each one easy to test in isolation and easy to hand off if someone else needed to touch just one piece.
 
-**Components**:
-- `CheckIn`: Form for checking in vehicles
-- `CheckOut`: Form for checking out vehicles
-- `CarLookup`: Search for parked vehicles
-- `SpotOverview`: Visual garage map with availability
-- `TransactionLog`: List of completed transactions
-- `PricingSettings`: Configure pricing rates
+### Tabs, and Tailwind for styling
 
-**Rationale**:
-- Each component has a single responsibility
-- Easy to test and modify
-- Reusable across different tabs
-- Clear separation of concerns
+Four tabs: Check In/Out for daily operations, Garage Map for the overview, Transactions for history, and Rates for configuration. Tailwind did the heavy lifting on styling — fast to iterate with, and it kept things responsive without much extra effort.
 
-### 7. User Interface
+## Adapting It for India
 
-**Decision**: Use tabbed interface with Tailwind CSS.
+Once the brief shifted to an Indian context, a handful of things needed to change — not just currency, but the whole feel of it:
 
-**Rationale**:
-- Tabs organize functionality logically
-- Tailwind provides rapid UI development
-- Responsive design works on all devices
-- Clean, professional appearance
+**Money.** USD out, INR in — ₹40 for the first hour, ₹20 for each additional, ₹200 daily cap (previously $5 / $3 / $25).
 
-**Tab Structure**:
-1. Check In / Out: Main operations
-2. Garage Map: Visual overview
-3. Transactions: History and revenue
-4. Rates: Configuration
+**Two-wheelers.** This was the big one. Bikes and scooters are everywhere in Indian cities, so a garage without dedicated two-wheeler parking would be missing the point entirely. Added a whole new spot type — 20 spots — alongside compact, standard, and EV.
 
-## India Adaptation
+**Plates.** Switched to the Indian format — state code, RTO number, series, number. Something like `MH 12 AB 1234`. Also added a list of state codes.
 
-### Changes Made
+**Dates and time.** DD/MM/YYYY instead of the US format, with a 12-hour clock and AM/PM.
 
-When the user requested adaptation for India, the following changes were implemented:
+**Wording.** Small things that add up — "Vehicle Number" instead of "License Plate," "Today's Collection" instead of "Today's Revenue."
 
-1. **Currency**: Changed from USD ($) to INR (₹)
-   - First hour: ₹40 (was $5)
-   - Additional hour: ₹20 (was $3)
-   - Daily cap: ₹200 (was $25)
+**Payments.** Added UPI as an option, since it's the dominant way people pay for things day-to-day, alongside cash and card.
 
-2. **Vehicle Types**: Added Two-Wheeler category
-   - 20 spots for bikes/scooters (very common in India)
-   - Kept existing categories (Compact, Standard, EV)
+None of these were arbitrary — two-wheelers needed their own category because they're such a huge share of vehicles on the road, the plate format had to match what's actually printed on Indian plates, and UPI needed a mention because ignoring it would've made the payment flow feel disconnected from reality.
 
-3. **License Plate Format**: Indian format
-   - Format: State Code + RTO Number + Series + Number
-   - Example: MH 12 AB 1234
-   - Added Indian state codes list
+## How I Tested It
 
-4. **Date Format**: DD/MM/YYYY with 12-hour time
-   - Changed from MM/DD/YYYY
-   - Added AM/PM indicator
+No automated test suite here — I went through it manually, which for an app this size was manageable.
 
-5. **Terminology**:
-   - "Vehicle Number" instead of "License Plate"
-   - "Today's Collection" instead of "Today's Revenue"
-   - "Registration Plate" terminology
+**Functionality:** checked cars in across every spot type, checked them out and watched the fee calculate, searched by plate, and paged through the transaction log.
 
-6. **Payment Options**: Added UPI mention
-   - UPI is dominant in India
-   - Also Cash and Card
+**Edge cases:** tried checking the same car in twice, tried checking out a car that was never parked, filled every spot of a given type, ran the daily-cap math, and made sure partial hours actually rounded up.
 
-### Rationale for India Changes
+**UI:** clicked through every button, tested form validation, checked how it held up on smaller screens, and confirmed error states actually showed something useful.
 
-- Two-wheelers are extremely common in Indian cities
-- Indian parking garages need dedicated bike parking
-- INR pricing is more realistic for Indian market
-- Indian license plate format is different from US
-- UPI is the primary payment method in India
+### Bugs along the way
 
-## Testing Strategy
+A few things broke and got fixed as I went:
 
-### Manual Testing Approach
+- **Type errors around `SpotType`.** Indexing into it wasn't type-safe at first. Fixed by introducing a proper `AvailabilitySummary` type and cleaning up `useParkingGarage.ts` to use it correctly.
+- **Wrong date format.** Started out US-style by default. Swapped in manual formatting instead of relying on `toLocaleString`, so it would consistently render DD/MM/YYYY.
+- **Two-wheelers weren't wired in everywhere.** Adding the new spot type meant touching `types.ts`, updating the hook to generate 20 two-wheeler spots, and making sure every component that displayed spot types actually accounted for four categories instead of three — `SpotOverview` especially.
+- **Currency formatting.** Originally USD-formatted. Switched to `toLocaleString('en-IN')` so numbers actually read the way they should in India (lakhs, not thousands separators every three digits).
 
-Since this is a client-side application without automated tests, I relied on manual testing:
+After every meaningful change, I ran `npm run build` just to make sure nothing was quietly broken — no type errors, nothing failing to import, everything compiling clean.
 
-1. **Functional Testing**:
-   - Check in vehicles with different spot types
-   - Check out vehicles and verify fee calculation
-   - Search for vehicles by plate
-   - View transaction log
+## Where This Is Strong, and Where It Isn't
 
-2. **Edge Case Testing**:
-   - Try to check in same vehicle twice
-   - Try to check out vehicle not in garage
-   - Test with all spots occupied
-   - Test daily cap calculation
-   - Test part-hour rounding
+**What's solid:** the TypeScript coverage catches a lot before it becomes a runtime problem, the components stay small and reusable, the hook keeps the logic in one predictable place, the UI gives immediate feedback, and the India-specific details feel like they were actually thought through rather than bolted on.
 
-3. **UI Testing**:
-   - Verify all buttons work
-   - Check form validation
-   - Test responsive design
-   - Verify error messages display correctly
+**What I'd still want to fix:** there's no persistence, so a refresh wipes everything. Input validation is thin. Error handling could be more forgiving. There's zero automated testing. Accessibility — ARIA labels, keyboard navigation — isn't really addressed. And performance on a very large transaction log hasn't been stress-tested.
 
-### Issues Encountered and Fixed
+**If this went to production**, the real list would be: a proper backend (Node/Express, Postgres), attendant login and auth, real persistence, WebSockets for multi-user syncing, actual reporting (daily/weekly/monthly), real UPI and card payment integration, a mobile app for attendants on the floor, license-plate recognition via camera, notifications for cars parked too long, and some basic analytics on peak hours and revenue trends.
 
-**Issue 1: TypeScript Type Errors**
-- **Problem**: Initial implementation had type errors with `SpotType` indexing
-- **Solution**: Created `AvailabilitySummary` type that properly maps all spot types
-- **Fix**: Updated `useParkingGarage.ts` to use proper type definitions
+## Where It Landed
 
-**Issue 2: Date Format**
-- **Problem**: Initial date format was US-style (MM/DD/YYYY)
-- **Solution**: Changed to Indian format (DD/MM/YYYY) in `formatDateTime` function
-- **Fix**: Used manual date formatting instead of `toLocaleString`
+Everything from the original brief got covered — check-in/check-out, tiered pricing with the cap, rounding, multiple spot types including two-wheelers, EV enforcement, availability checks, plate lookup, transaction logging, no double-parking, and the full India adaptation.
 
-**Issue 3: Two-Wheeler Integration**
-- **Problem**: Initial design didn't include two-wheelers
-- **Solution**: Added `twoWheeler` to `SpotType` union type
-- **Fix**: Updated all components to handle four spot types instead of three
-- **Changes**:
-  - Updated `types.ts`
-  - Updated `useParkingGarage.ts` to generate 20 two-wheeler spots
-  - Updated all components to display four spot types
-  - Updated `SpotOverview` to show four categories
-
-**Issue 4: Currency Formatting**
-- **Problem**: Initial implementation used USD formatting
-- **Solution**: Changed `formatCurrency` to use INR with Indian locale
-- **Fix**: Used `toLocaleString('en-IN')` for proper Indian number formatting
-
-### Build Verification
-
-After each major change, I ran `npm run build` to ensure:
-- No TypeScript errors
-- No missing imports
-- All components compile correctly
-- Build output is generated successfully
-
-## Design Trade-offs
-
-### What I Did Well
-
-1. **Type Safety**: Full TypeScript coverage prevents runtime errors
-2. **Component Modularity**: Each component is focused and reusable
-3. **State Management**: Custom hook centralizes logic
-4. **User Experience**: Clear UI with immediate feedback
-5. **Indian Adaptation**: Proper localization for Indian market
-
-### What Could Be Improved
-
-1. **Persistence**: No data persistence - data lost on refresh
-2. **Validation**: Minimal input validation (could add more)
-3. **Error Handling**: Could add more robust error handling
-4. **Testing**: No automated tests (unit tests, integration tests)
-5. **Accessibility**: Could add ARIA labels and keyboard navigation
-6. **Performance**: Could optimize for very large transaction logs
-7. **Backend**: No API - all operations are client-side
-
-### Future Enhancements
-
-If this were a production system, I would add:
-
-1. **Backend API**: Node.js/Express with PostgreSQL
-2. **Authentication**: Login system for attendants
-3. **Persistence**: Database for vehicles, transactions, spots
-4. **Real-time Updates**: WebSocket for multi-user support
-5. **Reporting**: Daily/weekly/monthly reports
-6. **Payment Integration**: UPI, credit card processing
-7. **Mobile App**: React Native for attendants
-8. **License Plate Recognition**: Camera integration
-9. **Notifications**: SMS/email for long-term parking
-10. **Analytics**: Usage patterns, peak hours, revenue trends
-
-## Conclusion
-
-The solution successfully addresses all requirements:
-- ✅ Check-in and check-out functionality
-- ✅ Tiered pricing with daily cap
-- ✅ Part-hour rounding
-- ✅ Multiple spot types (including two-wheelers for India)
-- ✅ EV spot enforcement
-- ✅ Availability checking
-- ✅ Vehicle lookup by plate
-- ✅ Transaction logging
-- ✅ No double-parking
-- ✅ Indian market adaptation
-
-The code is clean, well-structured, and maintainable. The UI is intuitive and responsive. The pricing logic is correct and handles edge cases properly.
+It's not production-grade, and it's not trying to be. But the code is clean, the logic is easy to follow, and the pricing math holds up under the edge cases that matter.
